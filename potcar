@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# 定义存放 POTCAR 文件的目录路径（根据实际情况修改）
+BASE_POTCAR_DIR="/home/chenmu/.tools/potpaw/"
+
+# 读取 POSCAR 文件的第六行，提取元素符号
+if [ ! -f "POSCAR" ]; then
+    echo "Error: POSCAR file not found in the current directory."
+    exit 1
+fi
+
+elements=($(sed -n '6p' POSCAR))  # 读取第六行并按空格拆分成数组
+
+# 提示用户是否使用这些元素生成 POTCAR
+echo "Detected elements from POSCAR: ${elements[*]}"
+read -p "Do you want to proceed with these elements? (yes/no): " response
+
+if [[ "$response" == "no" ]]; then
+    read -p "Enter the custom element folder names (separated by spaces, e.g., 'H1.25 N La_GW'): " -a elements
+    echo "Using custom POTCAR directories: ${elements[*]}"
+fi
+
+# 初始化新 POTCAR 文件
+output_potcar="POTCAR"
+> "$output_potcar"  # 清空或创建新文件
+
+# 遍历每个元素，查找对应的POTCAR
+for element in "${elements[@]}"; do
+    potcar_file="$BASE_POTCAR_DIR/$element/POTCAR"
+
+    if [ -f "$potcar_file" ]; then
+        echo "Adding POTCAR for element: $element from $potcar_file"
+        cat "$potcar_file" >> "$output_potcar"
+    else
+        echo "Error: POTCAR for element '$element' not found in $BASE_POTCAR_DIR"
+        exit 1
+    fi
+done
+
+echo "New POTCAR file has been successfully created in the current directory."
